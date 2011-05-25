@@ -42,6 +42,8 @@ import org.sakaiproject.api.app.syllabus.SyllabusItem;
 import org.sakaiproject.api.app.syllabus.SyllabusManager;
 import org.sakaiproject.api.app.syllabus.SyllabusService;
 import org.sakaiproject.component.cover.ServerConfigurationService;
+import org.sakaiproject.content.api.ContentCopy;
+import org.sakaiproject.content.api.ContentCopyContext;
 import org.sakaiproject.content.api.ContentHostingService;
 import org.sakaiproject.content.api.ContentResource;
 import org.sakaiproject.entity.api.Edit;
@@ -114,6 +116,7 @@ public class SyllabusServiceImpl implements SyllabusService, EntityTransferrer, 
   /** Dependency: a SyllabusManager. */
   private SyllabusManager syllabusManager;
   private ContentHostingService contentHostingService;
+  private ContentCopy contentCopy;
  
   /** Dependency: a logger component. */
   private Log logger = LogFactory.getLog(SyllabusServiceImpl.class);
@@ -167,6 +170,10 @@ public class SyllabusServiceImpl implements SyllabusService, EntityTransferrer, 
 
 	public void setContentHostingService(ContentHostingService contentHostingService) {
 		this.contentHostingService = contentHostingService;
+	}
+
+	public void setContentCopy(ContentCopy contentCopy) {
+		this.contentCopy = contentCopy;
 	}
  
   /*
@@ -1196,21 +1203,22 @@ public class SyllabusServiceImpl implements SyllabusService, EntityTransferrer, 
 						.getSyllabiForSyllabusItem(fromSyllabusItem);
 				if ((fromSyDataSet != null && fromSyDataSet.size() > 0) || fromSyllabusItem.getRedirectURL() != null) 
 				{
+					ContentCopyContext context = contentCopy.createCopyContext(fromContext, toContext, true);
 					String toPage = addSyllabusToolToPage(toContext, SiteService
 							.getSite(toContext).getTitle());
 					SyllabusItem toSyItem = syllabusManager
 							.getSyllabusItemByContextId(toPage);
+					String newUrl = contentCopy.convertContent(context, fromSyllabusItem.getRedirectURL(), "text/plain", null);
 					if (toSyItem == null) 
 					{
 						toSyItem = syllabusManager.createSyllabusItem(
 								UserDirectoryService.getCurrentUser().getId(),
-								toPage, fromSyllabusItem.getRedirectURL());
+								toPage, newUrl);
 					}
 					else if (fromSyllabusItem.getRedirectURL() !=null) {
-	                    toSyItem.setRedirectURL(fromSyllabusItem.getRedirectURL());
+	                    toSyItem.setRedirectURL(newUrl);
 	                    syllabusManager.saveSyllabusItem(toSyItem);
 	                }
-
 					Iterator fromSetIter = fromSyDataSet.iterator();
 					while (fromSetIter.hasNext()) 
 					{
@@ -1218,9 +1226,11 @@ public class SyllabusServiceImpl implements SyllabusService, EntityTransferrer, 
 						Integer positionNo = new Integer(syllabusManager
 								.findLargestSyllabusPosition(toSyItem)
 								.intValue() + 1);
+						
+						String newAsset = contentCopy.convertContent(context, toSyData.getAsset(), "text/html", null);
 						SyllabusData newToSyData = syllabusManager
 								.createSyllabusDataObject(toSyData.getTitle(),
-										positionNo, toSyData.getAsset(),
+										positionNo, newAsset,
 										toSyData.getView(), toSyData
 												.getStatus(), toSyData
 												.getEmailNotification(), toSyData.getStartDate(), toSyData.getEndDate(), toSyData.isLinkCalendar(),
@@ -1247,6 +1257,7 @@ public class SyllabusServiceImpl implements SyllabusService, EntityTransferrer, 
 						syllabusManager.addSyllabusToSyllabusItem(toSyItem,
 								newToSyData, false);
 				  }
+					contentCopy.copyReferences(context);
 				} 
 				else 
 				{
