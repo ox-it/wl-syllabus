@@ -40,6 +40,8 @@ import org.sakaiproject.api.app.syllabus.SyllabusItem;
 import org.sakaiproject.api.app.syllabus.SyllabusManager;
 import org.sakaiproject.api.app.syllabus.SyllabusService;
 import org.sakaiproject.component.cover.ServerConfigurationService;
+import org.sakaiproject.content.api.ContentCopy;
+import org.sakaiproject.content.api.ContentCopyContext;
 import org.sakaiproject.content.api.ContentHostingService;
 import org.sakaiproject.content.api.ContentResource;
 import org.sakaiproject.entity.api.Edit;
@@ -109,6 +111,7 @@ public class SyllabusServiceImpl implements SyllabusService, EntityTransferrer
   /** Dependency: a SyllabusManager. */
   private SyllabusManager syllabusManager;
   private ContentHostingService contentHostingService;
+  private ContentCopy contentCopy;
  
   /** Dependency: a logger component. */
   private Log logger = LogFactory.getLog(SyllabusServiceImpl.class);
@@ -1190,7 +1193,7 @@ public class SyllabusServiceImpl implements SyllabusService, EntityTransferrer
 	                    toSyItem.setRedirectURL(fromSyllabusItem.getRedirectURL());
 	                    syllabusManager.saveSyllabusItem(toSyItem);
 	                }
-
+					ContentCopyContext context = contentCopy.createCopyContext(fromContext, toContext, true);
 					Iterator fromSetIter = fromSyDataSet.iterator();
 					while (fromSetIter.hasNext()) 
 					{
@@ -1198,9 +1201,11 @@ public class SyllabusServiceImpl implements SyllabusService, EntityTransferrer
 						Integer positionNo = new Integer(syllabusManager
 								.findLargestSyllabusPosition(toSyItem)
 								.intValue() + 1);
+						
+						String newAsset = contentCopy.convertContent(context, toSyData.getAsset(), "text/html", null);
 						SyllabusData newToSyData = syllabusManager
 								.createSyllabusDataObject(toSyData.getTitle(),
-										positionNo, toSyData.getAsset(),
+										positionNo, newAsset,
 										toSyData.getView(), toSyData
 												.getStatus(), toSyData
 												.getEmailNotification());
@@ -1226,6 +1231,7 @@ public class SyllabusServiceImpl implements SyllabusService, EntityTransferrer
 						syllabusManager.addSyllabusToSyllabusItem(toSyItem,
 								newToSyData);
 				  }
+					contentCopy.copyReferences(context);
 				} 
 				else 
 				{
