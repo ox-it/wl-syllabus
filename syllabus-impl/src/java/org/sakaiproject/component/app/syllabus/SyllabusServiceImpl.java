@@ -166,6 +166,10 @@ public class SyllabusServiceImpl implements SyllabusService, EntityTransferrer
 	public void setContentHostingService(ContentHostingService contentHostingService) {
 		this.contentHostingService = contentHostingService;
 	}
+
+	public void setContentCopy(ContentCopy contentCopy) {
+		this.contentCopy = contentCopy;
+	}
  
   /*
    * (non-Javadoc)
