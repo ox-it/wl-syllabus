@@ -1183,6 +1183,7 @@ public class SyllabusServiceImpl implements SyllabusService, EntityTransferrer
 						.getSyllabiForSyllabusItem(fromSyllabusItem);
 				if (fromSyDataSet != null && fromSyDataSet.size() > 0) 
 				{
+					ContentCopyContext context = contentCopy.createCopyContext(fromContext, toContext, true);
 					String toPage = addSyllabusToolToPage(toContext, SiteService
 							.getSite(toContext).getTitle());
 					SyllabusItem toSyItem = syllabusManager
@@ -1194,10 +1195,10 @@ public class SyllabusServiceImpl implements SyllabusService, EntityTransferrer
 								toPage, fromSyllabusItem.getRedirectURL());
 					}
 					else if (fromSyllabusItem.getRedirectURL() !=null) {
-	                    toSyItem.setRedirectURL(fromSyllabusItem.getRedirectURL());
+						String newUrl = contentCopy.convertContent(context, fromSyllabusItem.getRedirectURL(), "text/plain", null);
+	                    toSyItem.setRedirectURL(newUrl);
 	                    syllabusManager.saveSyllabusItem(toSyItem);
 	                }
-					ContentCopyContext context = contentCopy.createCopyContext(fromContext, toContext, true);
 					Iterator fromSetIter = fromSyDataSet.iterator();
 					while (fromSetIter.hasNext()) 
 					{
